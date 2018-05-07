@@ -154,6 +154,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="aes.cpp" />
     <ClCompile Include="key.cpp" />
     <ClCompile Include="main..cpp" />
   </ItemGroup>
@@ -161,7 +162,11 @@
     <ClInclude Include="aes.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="crypter.h" />
+    <ClInclude Include="CryptCBCMode.h" />
+    <ClInclude Include="DecryptCBCMode.h" />
+    <ClInclude Include="EncryptCBCMode.h" />
     <ClInclude Include="key.h" />
+    <ClInclude Include="ProcessFile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
