@@ -155,11 +155,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="aes.cpp" />
+    <ClCompile Include="aes_decrypt.cpp" />
+    <ClCompile Include="aes_encrypt.cpp" />
     <ClCompile Include="key.cpp" />
     <ClCompile Include="main..cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aes.h" />
+    <ClInclude Include="aes_decrypt.h" />
+    <ClInclude Include="aes_encrypt.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="crypter.h" />
     <ClInclude Include="CryptCBCMode.h" />
