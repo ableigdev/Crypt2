@@ -31,7 +31,7 @@ protected:
 	unsigned char secondRow;
 	unsigned char fourthRow;
 
-	virtual void mixColumn() = 0;
+	virtual void mixColumns() = 0;
 
 	void subBytes();
 	void shiftRows();
