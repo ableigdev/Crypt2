@@ -235,3 +235,75 @@ bool ProcessFile<BlockType>::createDestinationFile(TCHAR* name)
 	closeFile(m_SaveFile);
 	return (m_SaveFile = CreateFile(name, GENERIC_WRITE, NULL, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr)) == INVALID_HANDLE_VALUE;
 }
+
+template <typename BlockType>
+void ProcessFile<BlockType>::setSizeBufferOfCluster(TCHAR* name, TCHAR* save)
+{
+	unsigned resultSizeCluster;
+	
+	if ((m_BytesOfBuffer = getSizeOfCluster(name)) < (resultSizeCluster = getSizeOfCluster(save)))
+	{
+		m_BytesOfBuffer = resultSizeCluster;
+	}
+
+	m_SizeFile = m_BytesOfBuffer / m_BytesOfBlock;
+	m_Buffer = new BlockType[m_SizeBuffer + 1];
+}
+
+template <typename BlockType>
+unsigned ProcessFile<BlockType>::getSizeOfCluster(TCHAR* name)
+{
+	DWORD secPerClas = 0;
+	DWORD bytePerSec = 0;
+	TCHAR catalog[3] = { name[0], name[1], '\0' };
+	return GetDiskFreeSpace(catalog, &secPerClas, &bytePerSec, nullptr, nuulptr) ? secPerClas * bytePerSec : CLUSTER;
+}
+
+template <typename BlockType>
+bool ProcessFile<BlockType>::checkFile()
+{
+	return m_OpenFile == INVALID_HANDLE_VALUE || m_SaveFile == INVALID_HANDLE_VALUE;
+}
+
+template <typename BlockType>
+void ProcessFile<BlockType>::processCode(unsigned length)
+{
+	for (size_t i = 0; i < length; ++i)
+	{
+		m_CrypterPtr->encryption(m_Buffer[i]);
+	}
+}
+
+template <typename BlockType>
+void ProcessFile<BlockType>::asyncReadFile(BlockType* buffer, OVERLAPPED& ol)
+{
+	ReadFile(m_OpenFile, buffer, m_BytesOfBuffer, nullptr, &ol);
+	ol.Offset += m_BytesOfBuffer;
+}
+
+template <typename BlockType>
+void ProcessFile<BlockType>::asyncProcessCode(BlockType* buffer)
+{
+	for (size_t i = 0; i < m_SizeFile; ++i)
+	{
+		m_CrypterPtr->encryption(buffer[i]);
+	}
+}
+
+template <typename BlockType>
+void ProcessFile<BlockType>::swapBuffer(BlockType** buff)
+{
+	register BlockType* temp = buff[2];
+	buff[2] = buff[1];
+	buff[1] = buff[0];
+	buff[0] = temp;
+}
+
+template <typename BlockType>
+void ProcessFile<BlockType>::checkWait(bool rez, OVERLAPPED& ol)
+{
+	if (rez == FALSE && GetLastError() == ERROR_IO_PENDING)
+	{
+		WaitForSingleObject(ol.hEvent, INFINITY);
+	}
+}
