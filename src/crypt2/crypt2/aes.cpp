@@ -1,5 +1,61 @@
 #include "aes.h"
 
+#define addRoundK \
+	*S ^= *K; \
+	S++;	  \
+	K++;	  \
+
+#define sBoxTurn \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];\
+	S++;		  \
+	*S = sBox[*S];
+
+#define row2 \
+	temp = *T;\
+	*T = *T1;\
+	T -= 8;\
+	*T1 = *T;\
+	T1 -= 8;\
+	*T = *T1;\
+	*T1 = temp;
+
+#define row4\
+	temp = *F;\
+	*F = *T1; \
+	F += 8;\
+	*T1 = *F;\
+	T1 += 8;\
+	*F = *T1;\
+	*T1 = temp;
+
 CryptAES::CryptAES()
 	: key(nullptr),
 	sBoxMass(nullptr),
@@ -10,10 +66,7 @@ CryptAES::CryptAES()
 }
 
 CryptAES::CryptAES(Key* valueKey)
-	: key(valueKey),
-	sBoxMass(nullptr),
-	secondRow(0),
-	fourthRow(0)
+	: key(valueKey)
 {
 
 }
@@ -32,13 +85,13 @@ void CryptAES::encryption(AESDataBlock& block)
 	{
 		subBytes();
 		shiftRows();
-		mixColumn();
+		mixColumns();
 		addRoundKey(i);
 	}
 
 	subBytes();
 	shiftRows();
-	addRoundKey();
+	addRoundKey(i);
 }
 
 void CryptAES::subBytes()
@@ -46,37 +99,7 @@ void CryptAES::subBytes()
 	register unsigned char* S = aesData._ch;
 	register unsigned char* sBox = sBoxMass;
 
-	*S = sBox[*S]; 
-	++S;		  
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
-	++S;
-	*S = sBox[*S];
+	sBoxTurn
 }
 
 void CryptAES::shiftRows()
@@ -86,24 +109,12 @@ void CryptAES::shiftRows()
 
 	unsigned char temp;
 
-	temp = *T; 
-	*T = *T1;
-	T -= 8; 
-	*T1 = *T;
-	T1 -= 8; 
-	*T = *T1;
-	*T1 = temp;
+	row2
 
 	register unsigned char* F = aesData._ch + fourthRow;
 	T1 = aesData._ch + fourthRow + 4;
 
-	temp = *F; 
-	*F = *T1; 
-	F += 8; 
-	*T1 = *F; 
-	T1 += 8; 
-	*F = *T1; 
-	*T1 = temp;
+	row4
 
 	T = aesData._ch;
 
@@ -116,18 +127,9 @@ void CryptAES::addRoundKey(unsigned shift)
 	register unsigned* S = aesData._u;
 	register unsigned* K = &(key->getKeyW(shift));
 
-	*S ^= *K; 
-	++S;	  
-	++K;	  
-
-	*S ^= *K;
-	++S;
-	++K;
-
-	*S ^= *K;
-	++S;
-	++K;
-
+	addRoundK
+	addRoundK
+	addRoundK
 	*S ^= *K;
 }
 
