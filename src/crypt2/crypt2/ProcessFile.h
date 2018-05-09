@@ -12,7 +12,7 @@ class ProcessFile
 public:
 	ProcessFile();
 	ProcessFile(Crypter<BlockType>*, TCHAR*, TCHAR*);
-	ProcessFile();
+	~ProcessFile();
 
 	bool process(bool);
 	bool asyncProcess(bool);
@@ -55,7 +55,7 @@ ProcessFile<BlockType>::ProcessFile(Crypter<BlockType>* ptr, TCHAR* name, TCHAR*
 	: m_OpenFile(INVALID_HANDLE_VALUE),
 	m_SaveFile(INVALID_HANDLE_VALUE),
 	m_Buffer(nullptr),
-	m_BytesOfBlock(sizeof(BlockType))
+	m_BytesOfBlock(sizeof(BlockType)),
 	m_CrypterPtr(ptr)
 {
 	createSourceFile(name);
@@ -64,7 +64,7 @@ ProcessFile<BlockType>::ProcessFile(Crypter<BlockType>* ptr, TCHAR* name, TCHAR*
 }
 
 template <typename BlockType>
-ProcessFile<BlockType>::ProcessFile()
+ProcessFile<BlockType>::~ProcessFile()
 {
 	delete[] m_Buffer;
 	closeFile(m_OpenFile);
@@ -103,11 +103,11 @@ bool ProcessFile<BlockType>::process(bool type)
 		if (type)
 		{
 			processCode(restBuffer / m_BytesOfBlock);
-			WriteFile(m_SaveFile, m_Buffer, restBlock - restBlock * (m_BytesOfBlock - char(m_Buffer[restBlock / m_BytesOfBlock]) + restBlock), nullptr, nullptr);
+			WriteFile(m_SaveFile, m_Buffer, restBuffer - restBlock * (m_BytesOfBlock - char(m_Buffer[restBuffer / m_BytesOfBlock]) + restBlock), nullptr, nullptr);
 		}
 		else
 		{
-			unsigned numberBlock = restBlock / m_BytesOfBlock + bool(restBlock);
+			unsigned numberBlock = restBuffer / m_BytesOfBlock + bool(restBlock);
 			processCode(numberBlock);
 			m_Buffer[numberBlock] = restBlock;
 			WriteFile(m_SaveFile, m_Buffer, numberBlock * m_BytesOfBlock + bool(restBlock), nullptr, nullptr);
@@ -148,7 +148,7 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 		OVERLAPPED massOl[3];
 		for (size_t i = 0; i < 3; ++i)
 		{
-			ZeroMemory(&massOl[i], sizeof OVERLAPPED);
+			ZeroMemory(&massOl[i], sizeof(OVERLAPPED));
 			massOl[i].hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		}
 
@@ -164,7 +164,7 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 			asyncProcessCode(buff[1]);
 
 			checkWait(rezWrite, massOl[2]);
-			swapBuff(buff);
+			swapBuffer(buff);
 			rezWrite = WriteFile(m_SaveFile, buff[2], m_BytesOfBuffer, nullptr, &massOl[2]);
 			massOl[2].Offset += m_BytesOfBuffer;
 		}
@@ -223,7 +223,7 @@ bool ProcessFile<BlockType>::createSourceFile(TCHAR* name)
 	if ((m_OpenFile = CreateFile(name, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)) != INVALID_HANDLE_VALUE)
 	{
 		DWORD sizeHigh = 0;
-		m_SaveFile = GetFileSize(m_OpenFile, &sizeHigh) + (ull(sizeHigh) << 32);
+		m_SizeFile = GetFileSize(m_OpenFile, &sizeHigh) + (ull(sizeHigh) << 32);
 		return true;
 	}
 	return false;
@@ -246,7 +246,7 @@ void ProcessFile<BlockType>::setSizeBufferOfCluster(TCHAR* name, TCHAR* save)
 		m_BytesOfBuffer = resultSizeCluster;
 	}
 
-	m_SizeFile = m_BytesOfBuffer / m_BytesOfBlock;
+	m_SizeBuffer = m_BytesOfBuffer / m_BytesOfBlock;
 	m_Buffer = new BlockType[m_SizeBuffer + 1];
 }
 
@@ -256,7 +256,7 @@ unsigned ProcessFile<BlockType>::getSizeOfCluster(TCHAR* name)
 	DWORD secPerClas = 0;
 	DWORD bytePerSec = 0;
 	TCHAR catalog[3] = { name[0], name[1], '\0' };
-	return GetDiskFreeSpace(catalog, &secPerClas, &bytePerSec, nullptr, nuulptr) ? secPerClas * bytePerSec : CLUSTER;
+	return GetDiskFreeSpace(catalog, &secPerClas, &bytePerSec, nullptr, nullptr) ? secPerClas * bytePerSec : CLUSTER;
 }
 
 template <typename BlockType>
