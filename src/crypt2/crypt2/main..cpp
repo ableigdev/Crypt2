@@ -240,6 +240,7 @@ void CoverCode::setKeys()
 	}
 	
 	key = new unsigned[8];
+	/*
 	key[0] = 0x00010203;
 	key[1] = 0x04050607;
 	key[2] = 0x08090a0b;
@@ -248,7 +249,7 @@ void CoverCode::setKeys()
 	key[5] = 0x14151617;
 	key[6] = 0x18191a1b;
 	key[7] = 0x1c1d1e1f;
-	
+	*/
 	/*
 	key = new unsigned[8];
 	for (size_t i = 0; i < length; i++)
@@ -263,6 +264,39 @@ void CoverCode::setKeys()
 		std::cout << "-----------------------------------------" << std::endl;
 	}
 	*/
+
+	TCHAR keyFile[MAX_PATH];
+
+	OPENFILENAME ofn;
+	ZeroMemory(&ofn, sizeof(OPENFILENAME));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = nullptr;
+	ofn.lpstrFilter = TEXT("All\0*\0\0");
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFile = keyFile;
+	ofn.lpstrFile[0] = '\0';
+	ofn.nMaxFile = sizeof(TCHAR)*MAX_PATH;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	std::cout << TEXT("Выберите файл с ключем: ");
+
+	while (!GetOpenFileName(&ofn))
+	{
+		std::cout << TEXT("\nФайл с ключем не выбран\n");
+		std::cout << TEXT("Повторите выбор.");
+	}
+
+	std::cout << keyFile << std::endl;
+
+	HANDLE openFile;
+	unsigned int bytesOfBuffer = 32;
+
+	std::cout << sizeof(key) << std::endl;
+
+	if ((openFile = CreateFile(keyFile, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)) != INVALID_HANDLE_VALUE)
+
+	ReadFile(openFile, key, bytesOfBuffer, nullptr, nullptr);
+
 	m_Key = new Key();
 
 	if (m_Type)
