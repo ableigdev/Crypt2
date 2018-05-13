@@ -177,7 +177,7 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 		massOl[2].Offset += m_BytesOfBuffer;
 
 		checkWait(rezWrite, massOl[2]);
-		delete[](buff[0] == m_Buffer ? buff[1] : buff[0]);
+		delete[] buff[1];
 		delete[] buff[2];
 		
 		for (size_t i = 0; i < 3; ++i)

@@ -3,6 +3,8 @@
 #include <locale>
 #include <stdlib.h>
 #include <wchar.h>
+#include <bitset>
+#include <conio.h>
 
 #include "key.h"
 #include "constants.h"
@@ -87,6 +89,7 @@ private:
 
 	template <typename DataType>
 	bool checkInput(DataType&, TCHAR*, unsigned, unsigned);
+	std::bitset<32> reverseByte(std::bitset<32> value);
 };
 
 CoverCode::~CoverCode()
@@ -155,16 +158,33 @@ template <typename DataType>
 bool CoverCode::checkInput(DataType& data, TCHAR* array1, unsigned array1Length, unsigned inputLength)
 {
 	bool flag;
-	TCHAR* input = new TCHAR[inputLength + 1];
-	std::cin.getline(input, inputLength + 1);
+	std::basic_string<TCHAR> input;
 
-	if (std::cin.rdbuf()->in_avail())
+	int c = 0;
+
+	while (true)
 	{
-		std::cin.clear();
-		std::cin.sync();
-		delete[] input;
-		return true;
+		c = _getch();
+
+		if (c == 27 || c == 13)
+		{
+			break;
+		}
+
+		if (c == 8 && !input.empty())
+		{
+			input.pop_back();
+			std::cout << "\b \b";
+			continue;
+		}
+
+		if (c != 8 && input.size() < inputLength)
+		{
+			input += c;
+			putchar(c);
+		}		
 	}
+	std::cout << std::endl;
 
 	for (size_t i = 0; i < inputLength; ++i)
 	{
@@ -181,21 +201,45 @@ bool CoverCode::checkInput(DataType& data, TCHAR* array1, unsigned array1Length,
 		{
 			std::cin.clear();
 			std::cin.sync();
-			delete[] input;
 			return flag;
 		}		
 	}
-	data = strtol(input, nullptr, 16);
+	data = strtol(input.data(), nullptr, 16);
 	std::cin.clear();
 	std::cin.sync();
-	delete[] input;
 	return flag;
+}
+
+std::bitset<32> CoverCode::reverseByte(std::bitset<32> value)
+{
+	std::bitset<8> byte;
+
+	for (unsigned i = 0; i < value.size(); i += 8)
+	{
+		for (unsigned j = 0, z = i; j < 8; ++z, ++j)
+		{
+			byte[j] = value[z];
+		}
+
+		for (unsigned j = i, z = byte.size() - 1; j < i + 8 && z >= 0; ++j, --z)
+		{
+			value[j] = byte[z];
+		}
+	}
+
+	std::bitset<32> result;
+	for (unsigned i = 0, j = value.size() - 1; i < value.size() && j >= 0; --j, ++i)
+	{
+		result[i] = value[j];
+	}
+	return result;
 }
 
 void CoverCode::setKeys()
 {
 	TCHAR hexArray[] = { TEXT('0'), TEXT('1'), TEXT('2'), TEXT('3'), TEXT('4'), TEXT('5'), TEXT('6'), TEXT('7'),
-						TEXT('8'), TEXT('9'), TEXT('a'), TEXT('b'), TEXT('c'), TEXT('d'), TEXT('e'), TEXT('f') };
+						TEXT('8'), TEXT('9'), TEXT('a'), TEXT('b'), TEXT('c'), TEXT('d'), TEXT('e'), TEXT('f'),
+						TEXT('A'), TEXT('B'), TEXT('C'), TEXT('D'), TEXT('E'), TEXT('F') };
 
 	std::cout << TEXT("Выберите действие (1 символ: 0 - шифрование, 1 - дешифрование): ");
 	while (checkInput(m_Type, hexArray, 2, 1))
@@ -239,7 +283,7 @@ void CoverCode::setKeys()
 		}
 	}
 	
-	key = new unsigned[8];
+	key = new unsigned[length];
 	/*
 	key[0] = 0x00010203;
 	key[1] = 0x04050607;
@@ -264,7 +308,7 @@ void CoverCode::setKeys()
 		std::cout << "-----------------------------------------" << std::endl;
 	}
 	*/
-
+	
 	TCHAR keyFile[MAX_PATH];
 
 	OPENFILENAME ofn;
@@ -287,16 +331,29 @@ void CoverCode::setKeys()
 	}
 
 	std::cout << keyFile << std::endl;
-
+	
 	HANDLE openFile;
-	unsigned int bytesOfBuffer = 32;
 
-	std::cout << sizeof(key) << std::endl;
+	unsigned counter = 0;
+	unsigned* buf = new unsigned();
 
 	if ((openFile = CreateFile(keyFile, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)) != INVALID_HANDLE_VALUE)
-
-	ReadFile(openFile, key, bytesOfBuffer, nullptr, nullptr);
-
+	{
+		while (ReadFile(openFile, buf, sizeof(unsigned), nullptr, nullptr))
+		{
+			if (counter < length)
+			{
+				std::bitset<32> afterPermutation = reverseByte(*buf);
+				key[counter++] = afterPermutation.to_ulong();
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	delete buf;
+	
 	m_Key = new Key();
 
 	if (m_Type)
@@ -317,7 +374,8 @@ void CoverCode::chooseMode()
 	unsigned char n = 0;
 
 	TCHAR hexArray[] = { TEXT('0'), TEXT('1'), TEXT('2'), TEXT('3'), TEXT('4'), TEXT('5'),
-		TEXT('6'), TEXT('7'), TEXT('8'), TEXT('9'), TEXT('a'), TEXT('b'), TEXT('c'), TEXT('d'), TEXT('e'), TEXT('f') };
+		TEXT('6'), TEXT('7'), TEXT('8'), TEXT('9'), TEXT('a'), TEXT('b'), TEXT('c'), TEXT('d'), TEXT('e'), TEXT('f'),
+		TEXT('A'), TEXT('B'), TEXT('C'), TEXT('D'), TEXT('E'), TEXT('F') };
 
 	if (m_Type)
 	{
@@ -345,7 +403,7 @@ void CoverCode::chooseMode()
 		AESDataBlock iv;
 		std::cout << TEXT("Введите первую часть IV (16 символов, hex): ");
 
-		while (checkInput(iv.m_ULL[0], hexArray, 16, 16))
+		while (checkInput(iv.m_ULL[0], hexArray, 22, 16))
 		{
 			std::cout << TEXT("Некорректный IV!") << std::endl;
 			std::cout << "-----------------------------------------" << std::endl;
@@ -355,7 +413,7 @@ void CoverCode::chooseMode()
 		std::cout << "-----------------------------------------" << std::endl;
 		std::cout << TEXT("Введите вторую часть IV (16 символов, hex): ");
 
-		while (checkInput(iv.m_ULL[1], hexArray, 16, 16))
+		while (checkInput(iv.m_ULL[1], hexArray, 22, 16))
 		{
 			std::cout << TEXT("Некорректный IV!") << std::endl;
 			std::cout << "-----------------------------------------" << std::endl;
