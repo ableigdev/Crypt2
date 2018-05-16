@@ -19,7 +19,7 @@ void EncryptAES::encryption(AESDataBlock& block)
 	CryptAES::encryption(block);
 }
 
-void EncryptAES::mixColumns()
+inline void EncryptAES::mixColumns()
 {
 	for (unsigned char i = 0, temp_ch[4] = { 0 }; i < 16; i += 4)
 	{

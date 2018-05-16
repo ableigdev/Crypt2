@@ -353,6 +353,7 @@ void CoverCode::setKeys()
 		}
 	}
 	delete buf;
+	CloseHandle(openFile);
 	
 	m_Key = new Key();
 

@@ -33,8 +33,8 @@ protected:
 
 	virtual void mixColumns() = 0;
 
-	void subBytes();
-	void shiftRows();
-	void addRoundKey(unsigned = 0);
-	void swapBytes(register unsigned char*, register unsigned char*);
+	inline void subBytes();
+	inline void shiftRows();
+	inline void addRoundKey(unsigned = 0);
+	inline void swapBytes(register unsigned char*, register unsigned char*);
 };
