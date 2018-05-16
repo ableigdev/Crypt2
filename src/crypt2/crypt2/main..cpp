@@ -178,7 +178,7 @@ bool CoverCode::checkInput(DataType& data, TCHAR* array1, unsigned array1Length,
 			continue;
 		}
 
-		if (c != 8 && input.size() < inputLength)
+		if (c != 8 && c != 0 && input.size() < inputLength)
 		{
 			input += c;
 			putchar(c);
@@ -464,7 +464,7 @@ int main()
 
 	} while (answer != 'n' && answer != 'N');
 
-	system("pause");
+	//system("pause");
 
 	return 0;
 }
