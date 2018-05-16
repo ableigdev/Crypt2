@@ -126,6 +126,7 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 
 	unsigned restBuffer = m_SizeFile % m_BytesOfBuffer;
 	unsigned restBlock = restBuffer % m_BytesOfBlock;
+	// Определяем количество шифруемых блоков
 	unsigned length = m_SizeFile / m_BytesOfBuffer;
 
 	if (restBuffer == 1 && type)
@@ -153,7 +154,7 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 		}
 
 		rezRead[0] = ReadFile(m_OpenFile, buff[1], m_BytesOfBuffer, nullptr, &massOl[0]);
-		massOl[1].Offset = massOl[0].Offset = m_BytesOfBuffer;
+		massOl[1].Offset = massOl[0].Offset = m_BytesOfBuffer; // Смещаем курсоры на следующее 8 байт
 
 		for (unsigned i = 1; i < length; ++i, iter ^= 1)
 		{
