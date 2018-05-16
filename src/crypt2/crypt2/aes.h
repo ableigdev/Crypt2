@@ -33,8 +33,8 @@ protected:
 
 	virtual void mixColumns() = 0;
 
-	inline void subBytes();
-	inline void shiftRows();
-	inline void addRoundKey(unsigned = 0);
-	inline void swapBytes(register unsigned char*, register unsigned char*);
+	inline void subBytes(); // Замена байт
+	inline void shiftRows(); // Сдвиг строк
+	inline void addRoundKey(unsigned = 0); // Добавление ключа раунда
+	inline void swapBytes(register unsigned char*, register unsigned char*); // Перестановка байт
 };

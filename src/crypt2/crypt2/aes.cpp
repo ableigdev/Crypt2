@@ -94,6 +94,7 @@ void CryptAES::encryption(AESDataBlock& block)
 	addRoundKey(i);
 }
 
+// Замена байт
 void CryptAES::subBytes()
 {
 	register unsigned char* S = aesData._ch;
@@ -102,6 +103,7 @@ void CryptAES::subBytes()
 	sBoxTurn
 }
 
+// Сдвиг строк
 void CryptAES::shiftRows()
 {
 	register unsigned char* T = aesData._ch + secondRow;
@@ -122,6 +124,7 @@ void CryptAES::shiftRows()
 	swapBytes(T + 6, T + 14);
 }
 
+// Добавление ключа раунда
 void CryptAES::addRoundKey(unsigned shift)
 {
 	register unsigned* S = aesData._u;

@@ -199,14 +199,10 @@ bool CoverCode::checkInput(DataType& data, TCHAR* array1, unsigned array1Length,
 
 		if (flag)
 		{
-			std::cin.clear();
-			std::cin.sync();
 			return flag;
 		}		
 	}
 	data = strtol(input.data(), nullptr, 16);
-	std::cin.clear();
-	std::cin.sync();
 	return flag;
 }
 
@@ -284,30 +280,6 @@ void CoverCode::setKeys()
 	}
 	
 	key = new unsigned[length];
-	/*
-	key[0] = 0x00010203;
-	key[1] = 0x04050607;
-	key[2] = 0x08090a0b;
-	key[3] = 0x0c0d0e0f;
-	key[4] = 0x10111213;
-	key[5] = 0x14151617;
-	key[6] = 0x18191a1b;
-	key[7] = 0x1c1d1e1f;
-	*/
-	/*
-	key = new unsigned[8];
-	for (size_t i = 0; i < length; i++)
-	{
-		std::cout << TEXT("Введите ") << i + 1 << TEXT("-ю часть ключа (8 символов, hex): ");
-		while (checkInput(key[i], hexArray, 16, 8))
-		{
-			std::cout << TEXT("Некорректный ключ!") << std::endl;
-			std::cout << "-----------------------------------------" << std::endl;
-			std::cout << TEXT("Введите ") << i + 1 << TEXT("-ю часть ключа (8 символов, hex): ");
-		}
-		std::cout << "-----------------------------------------" << std::endl;
-	}
-	*/
 	
 	TCHAR keyFile[MAX_PATH];
 
@@ -464,8 +436,6 @@ int main()
 		std::cin >> answer;
 
 	} while (answer != 'n' && answer != 'N');
-
-	//system("pause");
 
 	return 0;
 }
