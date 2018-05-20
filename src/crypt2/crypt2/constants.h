@@ -1,5 +1,9 @@
 #pragma once
 
+#define SHIFT_8 8
+#define SHIFT_16 16
+#define SHIFT_24 24
+
 typedef unsigned long long ull;
 
 union AESDataBlock

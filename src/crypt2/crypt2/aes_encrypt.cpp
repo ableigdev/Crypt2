@@ -1,5 +1,17 @@
 #include "aes_encrypt.h"
 
+#define MixColLoopEncr\
+		cur = *SAr; \
+		cur_8 = unsigned char(cur >> SHIFT_8);\
+		cur_16 = unsigned char(cur >> SHIFT_16);\
+		cur_24 = cur >> SHIFT_24;\
+		cur = unsigned char(cur);\
+		*SAr = (MultiplyBy2[cur] | (MultiplyBy3[cur] << SHIFT_24) | (cur << SHIFT_8) | (cur << SHIFT_16)) \
+		        ^ (MultiplyBy3[cur_8] | (MultiplyBy2[cur_8] << SHIFT_8) | (cur_8 << SHIFT_16) | (cur_8 << SHIFT_24)) \
+				^ (cur_16 | (MultiplyBy3[cur_16] << SHIFT_8) | (MultiplyBy2[cur_16] << SHIFT_16) | (cur_16 << SHIFT_24)) \
+				^ (cur_24 | (MultiplyBy3[cur_24] << SHIFT_16) | (MultiplyBy2[cur_24] << SHIFT_24) | (cur_24 << SHIFT_8));\
+		++SAr;
+
 EncryptAES::EncryptAES()
 	: CryptAES()
 {
@@ -21,16 +33,15 @@ void EncryptAES::encryption(AESDataBlock& block)
 
 inline void EncryptAES::mixColumns()
 {
-	for (unsigned char i = 0, temp_ch[4] = { 0 }; i < 16; i += 4)
-	{
-		temp_ch[0] = MultiplyBy2[aesData._ch[i]] ^ MultiplyBy3[aesData._ch[i + 1]] ^ aesData._ch[i + 2] ^ aesData._ch[i + 3];
-		temp_ch[1] = aesData._ch[i] ^ MultiplyBy2[aesData._ch[i + 1]] ^ MultiplyBy3[aesData._ch[i + 2]] ^ aesData._ch[i + 3];
-		temp_ch[2] = aesData._ch[i] ^ aesData._ch[i + 1] ^ MultiplyBy2[aesData._ch[i + 2]] ^ MultiplyBy3[aesData._ch[i + 3]];
-		temp_ch[3] = MultiplyBy3[aesData._ch[i]] ^ aesData._ch[i + 1] ^ aesData._ch[i + 2] ^ MultiplyBy2[aesData._ch[i + 3]];
+	register unsigned int cur_8;
+	register unsigned int cur;
+	register unsigned int cur_16;
+	register unsigned int cur_24;
 
-		for (size_t j = 0; j < 4; ++j)
-		{
-			aesData._ch[i + j] = temp_ch[j];
-		}
-	}
+	unsigned int* SAr = aesData._u;
+
+	MixColLoopEncr
+	MixColLoopEncr
+	MixColLoopEncr
+	MixColLoopEncr	
 }
