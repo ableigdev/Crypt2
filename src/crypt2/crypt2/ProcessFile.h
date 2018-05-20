@@ -37,8 +37,7 @@ private:
 	void processCode(unsigned);
 	void asyncReadFile(BlockType*, OVERLAPPED&);
 	void asyncProcessCode(BlockType*);
-	void swapBuffer(BlockType**);
-	void checkWait(bool, OVERLAPPED&);
+	void checkWait(BOOL, OVERLAPPED&);
 };
 
 template <typename BlockType>
@@ -116,85 +115,89 @@ bool ProcessFile<BlockType>::process(bool type)
 	return false;
 }
 
-template <typename Block>
-bool FileCode<Block>::asyncProcess(bool type)
+template <typename BlockType>
+bool ProcessFile<BlockType>::asyncProcess(bool type)
 {
 	if (checkFile())
+	{
 		return true;
+	}
 
-	// Определем буфер для последнего блока, если он не кратен 8
-	unsigned restBuffer = sizeFile % bytesOfBuffer;
-	unsigned restBlock = restBuffer % bytesOfBlock;
+	unsigned restBuffer = m_SizeFile % m_BytesOfBuffer;
+	unsigned restBlock = restBuffer % m_BytesOfBlock;
 	// Определяем количество шифруемых блоков
-	unsigned length = sizeFile / bytesOfBuffer;
+	unsigned length = m_SizeFile / m_BytesOfBuffer;
 
 	if (restBuffer == 1 && type)
 	{
 		--length;
-		restBuffer += bytesOfBuffer;
+		restBuffer += m_BytesOfBuffer;
 	}
+
 	if (length)
 	{
-		Block* buff[2];
-		buff[0] = buffer;
-		buff[1] = new Block[sizeBuffer];
-		bool iter = 1, rezRead[2], rezWrite = 1;
+		BlockType* buff[3];
+		buff[0] = m_Buffer;
+		buff[1] = new BlockType[m_SizeBuffer];
+
+		bool iter = 1;
+		bool rezRead[2];
+		bool rezWrite = 1;
 
 		OVERLAPPED massOl[2];
-		for (size_t i = 0; i < 2; i++)
+		for (size_t i = 0; i < 2; ++i)
 		{
 			ZeroMemory(&massOl[i], sizeof(OVERLAPPED));
 			massOl[i].hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		}
 
-		rezRead[0] = ReadFile(openFile, buff[1], bytesOfBuffer, nullptr, &massOl[1]);
-		massOl[0].Offset = bytesOfBuffer;
+		rezRead[0] = ReadFile(m_OpenFile, buff[1], m_BytesOfBuffer, nullptr, &massOl[1]);
+		massOl[0].Offset = m_BytesOfBuffer; // Смещаем курсоры на следующее 8 байт
 
 		for (unsigned i = 1; i < length; ++i, iter ^= 1)
 		{
-			rezRead[iter] = ReadFile(openFile, buff[iter ^ 1], bytesOfBuffer, nullptr, &massOl[iter ^ 1]);
+			rezRead[iter] = ReadFile(m_OpenFile, buff[iter ^ 1], m_BytesOfBuffer, nullptr, &massOl[iter ^ 1]);
 
 			checkWait(rezRead[iter], massOl[iter ^ 1]);
 
 			asyncProcessCode(buff[iter]);
 			checkWait(FALSE, massOl[iter]);
 
-			rezWrite = WriteFile(saveFile, buff[iter], bytesOfBuffer, nullptr, &massOl[iter]);
+			rezWrite = WriteFile(m_SaveFile, buff[iter], m_BytesOfBuffer, nullptr, &massOl[iter]);
 			checkWait(rezWrite, massOl[iter]);
-			massOl[0].Offset = massOl[1].Offset += bytesOfBuffer;
+			massOl[0].Offset = massOl[1].Offset += m_BytesOfBuffer;
 		}
 
 		checkWait(rezRead[iter ^ 1], massOl[iter]);
 		asyncProcessCode(buff[iter]);
 
 		checkWait(FALSE, massOl[iter]);
-		rezWrite = WriteFile(saveFile, buff[iter], bytesOfBuffer, nullptr, &massOl[iter]);
-		massOl[iter].Offset += bytesOfBuffer;
+		rezWrite = WriteFile(m_SaveFile, buff[iter], m_BytesOfBuffer, nullptr, &massOl[iter]);
+		massOl[iter].Offset += m_BytesOfBuffer;
 
 		checkWait(rezWrite, massOl[iter ^ 1]);
-
 		delete[] buff[1];
-
-		for (size_t i = 0; i < 2; i++)
+		
+		for (size_t i = 0; i < 2; ++i)
 		{
 			CloseHandle(massOl[i].hEvent);
 		}
-
 	}
 	if (restBuffer)
 	{
-		ReadFile(openFile, buffer, restBuffer, nullptr, nullptr);
+		ReadFile(m_OpenFile, m_Buffer, restBuffer, nullptr, nullptr);
+		
 		if (type)
 		{
-			processCode(restBuffer / bytesOfBlock);
-			WriteFile(saveFile, buffer, restBuffer - restBlock * (bytesOfBlock - char(buffer[restBuffer / bytesOfBlock]) + restBlock), nullptr, nullptr);
+			processCode(restBuffer / m_BytesOfBlock);
+			WriteFile(m_SaveFile, m_Buffer, restBuffer - restBlock * (m_BytesOfBlock - char(m_Buffer[restBuffer / m_BytesOfBlock]) + restBlock), nullptr, nullptr);
 		}
 		else
 		{
-			unsigned numberBlock = restBuffer / bytesOfBlock + bool(restBlock);
+			unsigned numberBlock = restBuffer / m_BytesOfBlock + bool(restBlock);
 			processCode(numberBlock);
-			buffer[numberBlock] = restBlock;
-			WriteFile(saveFile, buffer, numberBlock*bytesOfBlock + bool(restBlock), nullptr, nullptr);
+			m_Buffer[numberBlock] = restBlock;
+			WriteFile(m_SaveFile, m_Buffer, numberBlock * m_BytesOfBlock + bool(restBlock), nullptr, nullptr);
 		}
 	}
 	return false;
@@ -283,15 +286,6 @@ void ProcessFile<BlockType>::asyncProcessCode(BlockType* buffer)
 	{
 		m_CrypterPtr->encryption(buffer[i]);
 	}
-}
-
-template <typename BlockType>
-void ProcessFile<BlockType>::swapBuffer(BlockType** buff)
-{
-	register BlockType* temp = buff[2];
-	buff[2] = buff[1];
-	buff[1] = buff[0];
-	buff[0] = temp;
 }
 
 template <typename BlockType>
