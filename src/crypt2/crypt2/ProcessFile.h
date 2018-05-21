@@ -134,25 +134,26 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 		restBuffer += m_BytesOfBuffer;
 	}
 
+	bool iter = 1;
+	bool rezRead[2];
+	bool rezWrite = 1;
+
+	OVERLAPPED massOl[2];
+	for (size_t i = 0; i < 2; ++i)
+	{
+		ZeroMemory(&massOl[i], sizeof(OVERLAPPED));
+		massOl[i].hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	}
+
 	if (length)
 	{
 		BlockType* buff[3];
 		buff[0] = m_Buffer;
 		buff[1] = new BlockType[m_SizeBuffer];
 
-		bool iter = 1;
-		bool rezRead[2];
-		bool rezWrite = 1;
-
-		OVERLAPPED massOl[2];
-		for (size_t i = 0; i < 2; ++i)
-		{
-			ZeroMemory(&massOl[i], sizeof(OVERLAPPED));
-			massOl[i].hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		}
-
 		rezRead[0] = ReadFile(m_OpenFile, buff[1], m_BytesOfBuffer, nullptr, &massOl[1]);
 		massOl[0].Offset = m_BytesOfBuffer; // Смещаем курсоры на следующее 8 байт
+		checkWait(rezRead[iter ^ 1], massOl[iter]);
 
 		for (unsigned i = 1; i < length; ++i, iter ^= 1)
 		{
@@ -167,8 +168,7 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 			checkWait(rezWrite, massOl[iter]);
 			massOl[0].Offset = massOl[1].Offset += m_BytesOfBuffer;
 		}
-
-		checkWait(rezRead[iter ^ 1], massOl[iter]);
+				
 		asyncProcessCode(buff[iter]);
 
 		checkWait(FALSE, massOl[iter]);
@@ -185,19 +185,24 @@ bool ProcessFile<BlockType>::asyncProcess(bool type)
 	}
 	if (restBuffer)
 	{
-		ReadFile(m_OpenFile, m_Buffer, restBuffer, nullptr, nullptr);
+		rezRead[0] = ReadFile(m_OpenFile, m_Buffer, restBuffer, nullptr, &massOl[0]);
+		checkWait(rezRead[0], massOl[0]);
 		
 		if (type)
 		{
 			processCode(restBuffer / m_BytesOfBlock);
-			WriteFile(m_SaveFile, m_Buffer, restBuffer - restBlock * (m_BytesOfBlock - char(m_Buffer[restBuffer / m_BytesOfBlock]) + restBlock), nullptr, nullptr);
+			checkWait(FALSE, massOl[0]);
+			rezWrite = WriteFile(m_SaveFile, m_Buffer, restBuffer - restBlock * (m_BytesOfBlock - char(m_Buffer[restBuffer / m_BytesOfBlock]) + restBlock), nullptr, &massOl[1]);
+			checkWait(rezWrite, massOl[1]);
 		}
 		else
 		{
 			unsigned numberBlock = restBuffer / m_BytesOfBlock + bool(restBlock);
 			processCode(numberBlock);
+			checkWait(FALSE, massOl[0]);
 			m_Buffer[numberBlock] = restBlock;
-			WriteFile(m_SaveFile, m_Buffer, numberBlock * m_BytesOfBlock + bool(restBlock), nullptr, nullptr);
+			rezWrite = WriteFile(m_SaveFile, m_Buffer, numberBlock * m_BytesOfBlock + bool(restBlock), nullptr, &massOl[1]);
+			checkWait(rezWrite, massOl[1]);
 		}
 	}
 	return false;
