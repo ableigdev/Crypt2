@@ -155,54 +155,62 @@ void CoverCode::cipher()
 }
 
 template <typename DataType>
-bool CoverCode::checkInput(DataType& data, TCHAR* array1, unsigned array1Length, unsigned inputLength)
+bool CoverCode::checkInput(DataType& data, TCHAR* mass, unsigned massLength, unsigned inputLength)
 {
 	bool flag;
-	std::basic_string<TCHAR> input;
+	TCHAR* input = new TCHAR[inputLength];
 
 	int c = 0;
+	int counter = 0;
 
 	while (true)
 	{
-		c = _getch();
+		c = _getch(); // Считываем символ с консоли
 
+					  // Если введеный символ  - esc или enter
 		if (c == 27 || c == 13)
 		{
 			break;
 		}
 
-		if (c == 8 && !input.empty())
+		// Если входной символ равен backspace и буфер не пустой
+		if (c == 8 && counter != 0)
 		{
-			input.pop_back();
-			std::cout << "\b \b";
+			input[counter--] = ' '; // Удаляем последний введенный символ
+									// Затираем символ в консоли
+			putchar('\b');
+			putchar(' ');
+			putchar('\b');
 			continue;
 		}
 
-		if (c != 8 && c != 0 && input.size() < inputLength)
+		// Если введеный символ не равен backspace и буфер не заполнен до конца
+		if (c != 8 && c != 0 && counter < inputLength)
 		{
-			input += c;
-			putchar(c);
-		}		
-	}
-	std::cout << std::endl;
-
-	for (size_t i = 0; i < inputLength; ++i)
-	{
-		flag = true;
-		for (size_t j = 0; j < array1Length && flag; ++j)
-		{
-			if (input[i] == array1[j])
+			// Проверка корректности содержимого в буфере
+			for (size_t i = 0; i < inputLength; i++)
 			{
-				flag = false;
+				flag = true;
+				for (size_t j = 0; j < massLength && flag; j++)
+				{
+					if (c == mass[j])
+						flag = false;
+				}
+				if (flag)
+				{
+					break;
+				}
+			}
+
+			if (flag == false)
+			{
+				input[counter++] = c; // Добавляем введеный символ в буфер
+				putchar(c); // Выводим символ в консоль
 			}
 		}
-
-		if (flag)
-		{
-			return flag;
-		}		
 	}
-	data = strtol(input.data(), nullptr, 16);
+	std::cout << std::endl;
+	data = strtol(input, nullptr, 16);
 	return flag;
 }
 
