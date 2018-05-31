@@ -176,42 +176,42 @@ bool CoverCode::checkInput(DataType& data, TCHAR* mass, unsigned massLength, uns
 		// Если входной символ равен backspace и буфер не пустой
 		if (c == 8 && counter != 0)
 		{
-			input[counter--] = ' '; // Удаляем последний введенный символ
-									// Затираем символ в консоли
+			--counter; // Удаляем последний введенный символ
+					   // Затираем символ в консоли
+			puts("\b \b");
+			/*
 			putchar('\b');
 			putchar(' ');
 			putchar('\b');
+			*/
 			continue;
 		}
 
 		// Если введеный символ не равен backspace и буфер не заполнен до конца
 		if (c != 8 && c != 0 && counter < inputLength)
 		{
-			// Проверка корректности содержимого в буфере
-			for (size_t i = 0; i < inputLength; i++)
+			if (massLength <= 5)
 			{
-				flag = true;
-				for (size_t j = 0; j < massLength && flag; j++)
+				if (c >= '0' && c < massLength + '0')
 				{
-					if (c == mass[j])
-						flag = false;
-				}
-				if (flag)
-				{
-					break;
+					input[counter++] = c; // Добавляем введеный символ в буфер
+					putchar(c);
 				}
 			}
-
-			if (flag == false)
+			else
 			{
-				input[counter++] = c; // Добавляем введеный символ в буфер
-				putchar(c); // Выводим символ в консоль
+				int temp = tolower(c);
+				if (temp >= '0' && temp <= '9' || temp >= 'a' && temp <= 'f')
+				{
+					input[counter++] = c; // Добавляем введеный символ в буфер
+					putchar(c);
+				}
 			}
 		}
 	}
-	std::cout << std::endl;
+	putchar('\n');
 	data = strtol(input, nullptr, 16);
-	return flag;
+	return false;
 }
 
 std::bitset<32> CoverCode::reverseByte(std::bitset<32> value)
